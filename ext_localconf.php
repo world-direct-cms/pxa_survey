@@ -1,17 +1,17 @@
 <?php
-defined('TYPO3_MODE') || die('Access denied.');
+defined('TYPO3') || die('Access denied.');
 
 call_user_func(
     function () {
         \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
-            'Pixelant.PxaSurvey',
+            'PxaSurvey',
             'Survey',
             [
-                'Survey' => 'show, showResults, answer, finish'
+                \Pixelant\PxaSurvey\Controller\SurveyController::class => 'show, showResults, answer, finish'
             ],
             // non-cacheable actions
             [
-                'Survey' => 'show, showResults, answer, finish'
+                \Pixelant\PxaSurvey\Controller\SurveyController::class => 'show, showResults, answer, finish'
             ]
         );
 

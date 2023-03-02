@@ -18,8 +18,11 @@ use Pixelant\PxaSurvey\Domain\Model\Answer;
 use Pixelant\PxaSurvey\Domain\Model\Question;
 use Pixelant\PxaSurvey\Domain\Model\Survey;
 use Pixelant\PxaSurvey\Domain\Model\UserAnswer;
+use Pixelant\PxaSurvey\Domain\Repository\SurveyRepository;
+use Pixelant\PxaSurvey\Domain\Repository\UserAnswerRepository;
+use Pixelant\PxaSurvey\Domain\Repository\AnswerRepository;
 use Pixelant\PxaSurvey\Utility\SurveyMainUtility;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
 /**
@@ -31,32 +34,28 @@ abstract class AbstractController extends ActionController
     /**
      * Survey Repository
      *
-     * @var \Pixelant\PxaSurvey\Domain\Repository\SurveyRepository
-     * @TYPO3\CMS\Extbase\Annotation\Inject
+     * @var SurveyRepository
      */
     protected $surveyRepository = null;
 
     /**
      * User Answer Repository
      *
-     * @var \Pixelant\PxaSurvey\Domain\Repository\UserAnswerRepository
-     * @TYPO3\CMS\Extbase\Annotation\Inject
+     * @var UserAnswerRepository
      */
     protected $userAnswerRepository = null;
 
     /**
      * Answer Repository
      *
-     * @var \Pixelant\PxaSurvey\Domain\Repository\AnswerRepository
-     * @TYPO3\CMS\Extbase\Annotation\Inject
+     * @var AnswerRepository
      */
     protected $answerRepository = null;
 
     /**
      * Frontend User Repository
      *
-     * @var \TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository
-     * @TYPO3\CMS\Extbase\Annotation\Inject
+     * @var FrontendUserRepository
      */
     protected $frontendUserRepository = null;
 
@@ -96,7 +95,7 @@ abstract class AbstractController extends ActionController
                         $allAnswersCount++;
                     }
                 } elseif (!empty($userAnswer->getCustomValue())) { // custom value
-                    $identifier = GeneralUtility::shortMD5($userAnswer->getCustomValue());
+                    $identifier = substr(md5($userAnswer->getCustomValue()), 0, 10);
 
                     if (!is_array($questionData[$identifier])) {
                         $questionData[$identifier] = [
@@ -137,5 +136,25 @@ abstract class AbstractController extends ActionController
         }
 
         return $questionData;
+    }
+
+    public function injectSurveyRepository(SurveyRepository $surveyRepository): void
+    {
+        $this->surveyRepository = $surveyRepository;
+    }
+
+    public function injectUserAnswerRepository(UserAnswerRepository $userAnswerRepository): void
+    {
+        $this->userAnswerRepository = $userAnswerRepository;
+    }
+
+    public function injectAnswerRepository(AnswerRepository $answerRepository): void
+    {
+        $this->answerRepository = $answerRepository;
+    }
+
+    public function injectFrontendUserRepository(FrontendUserRepository $frontendUserRepository): void
+    {
+        $this->frontendUserRepository = $frontendUserRepository;
     }
 }

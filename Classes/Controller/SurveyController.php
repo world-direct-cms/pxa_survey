@@ -18,12 +18,13 @@ use Pixelant\PxaSurvey\Domain\Model\Question;
 use Pixelant\PxaSurvey\Domain\Model\Survey;
 use Pixelant\PxaSurvey\Domain\Model\UserAnswer;
 use Pixelant\PxaSurvey\Utility\SurveyMainUtility;
+use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Utility\StringUtility;
 use TYPO3\CMS\Extbase\Domain\Model\FrontendUser;
+use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 use TYPO3\CMS\Extbase\Annotation as Extbase;
 
@@ -59,9 +60,9 @@ class SurveyController extends AbstractController
     /**
      * action show
      *
-     * @return void
+     * @return ResponseInterface
      */
-    public function showAction()
+    public function showAction(): ResponseInterface
     {
         /** @var Survey $survey */
         $survey = $this->surveyRepository->findByUid((int)$this->settings['survey']);
@@ -69,10 +70,10 @@ class SurveyController extends AbstractController
         if ($survey !== null && !$this->isSurveyAllowed($survey)) {
             /** @noinspection PhpUnhandledExceptionInspection */
             if ((int)$this->settings['finished_mode'] === 2) {
-                $this->forward('showResults', null, null);
+                return new ForwardResponse('showResults');
             }
             else {
-                $this->forward('finish', null, null, ['survey' => $survey, 'alreadyFinished' => true]);
+                return (new ForwardResponse('finish'))->withArguments(['survey' => $survey, 'alreadyFinished' => true]);
             }
         }
 
@@ -90,6 +91,8 @@ class SurveyController extends AbstractController
         }
 
         $this->view->assign('survey', $survey);
+
+        return $this->htmlResponse();
     }
 
     /**
@@ -97,11 +100,13 @@ class SurveyController extends AbstractController
      *
      * @param Survey $survey
      * @param Question $currentQuestion
-
+     *
+     * @return ResponseInterface
+     *
      * @Extbase\Validate("\Pixelant\PxaSurvey\Domain\Validation\Validator\SurveyAnswerValidator", param="survey")
      * @Extbase\Validate("\Pixelant\PxaSurvey\Domain\Validation\Validator\ReCaptchaValidator", param="survey")
      */
-    public function answerAction(Survey $survey, Question $currentQuestion = null)
+    public function answerAction(Survey $survey, Question $currentQuestion = null): ResponseInterface
     {
         $answers = $this->convertRequestToUserAnswersArray();
 
@@ -115,9 +120,10 @@ class SurveyController extends AbstractController
 
             SurveyMainUtility::addAnswerToSessionData($survey->getUid(), $answers);
 
-            // Show next question
-            $this->forward('show');
+            return new ForwardResponse('show');
         }
+
+        return $this->htmlResponse();
     }
 
     /**
@@ -125,24 +131,30 @@ class SurveyController extends AbstractController
      *
      * @param Survey $survey
      * @param bool $alreadyFinished User already finished this survey and is not allowed take it again
+     *
+     * @return ResponseInterface
      */
-    public function finishAction(Survey $survey, bool $alreadyFinished = false)
+    public function finishAction(Survey $survey, bool $alreadyFinished = false): ResponseInterface
     {
         // If there are more than one survey on page and one of them redirect to finish
         // only real one that was finished should show message
         if ((int)$this->settings['survey'] !== $survey->getUid()) {
-            $this->forward('show');
+            return new ForwardResponse('show');
         }
 
         $this->view
             ->assign('survey', $survey)
             ->assign('alreadyFinished', $alreadyFinished);
+
+        return $this->htmlResponse();
     }
 
     /**
      * Show survey results
+     *
+     * @return ResponseInterface
      */
-    public function showResultsAction()
+    public function showResultsAction(): ResponseInterface
     {
         /** @var Survey $survey */
         $survey = $this->surveyRepository->findByUid((int)$this->settings['survey']);
@@ -154,6 +166,8 @@ class SurveyController extends AbstractController
         $this->view
             ->assign('survey', $survey)
             ->assign('data', $data);
+
+        return $this->htmlResponse();
     }
 
     /**
@@ -233,7 +247,7 @@ class SurveyController extends AbstractController
             }
 
             /** @var UserAnswer $userAnswer */
-            $userAnswer = $this->objectManager->get(UserAnswer::class);
+            $userAnswer = GeneralUtility::makeInstance(UserAnswer::class);
             $question = $this->getQuestionFromSurveyByUid($survey, (int)$questionUid);
             if ($question !== null) {
                 $userAnswer->setQuestion($question);
@@ -301,7 +315,7 @@ class SurveyController extends AbstractController
     protected function setUserAnswerFromRequestData(UserAnswer $userAnswer, string $answerData)
     {
         // Check if answer is option object
-        if (StringUtility::beginsWith($answerData, '__object--')) {
+        if (\str_starts_with($answerData, '__object--')) {
             $answerUid = (int)substr($answerData, 10);
             /** @var Answer $answer */
             $answer = $this->answerRepository->findByUid($answerUid);
@@ -392,7 +406,7 @@ class SurveyController extends AbstractController
      */
     protected function fixQuestionRelationForUserAnswers(array $userAnswers)
     {
-        $this->objectManager->get(PersistenceManager::class)->persistAll();
+        GeneralUtility::makeInstance(PersistenceManager::class)->persistAll();
 
         foreach ($userAnswers as $userAnswer) {
             GeneralUtility::makeInstance(ConnectionPool::class)

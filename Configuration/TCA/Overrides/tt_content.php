@@ -1,9 +1,9 @@
 <?php
-defined('TYPO3_MODE') || die;
+defined('TYPO3') || die;
 
 call_user_func(function () {
     \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
-        'Pixelant.PxaSurvey',
+        'PxaSurvey',
         'Survey',
         'Simple Survey'
     );

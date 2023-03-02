@@ -8,25 +8,25 @@
     </f:link.action>
 
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation" class="active">
-            <a href="#bar" aria-controls="bar" role="tab" data-toggle="tab">
+        <li role="presentation">
+            <a id="bar-tab" class="active" data-bs-toggle="tab" data-bs-target="#bar" type="button" role="tab" aria-controls="bar" aria-selected="true">
                 <f:translate key="module.bar_chart"/>
             </a>
         </li>
         <li role="presentation">
-            <a href="#pie" aria-controls="Pie" role="tab" data-toggle="tab">
+            <a id="pie-tab" data-bs-toggle="tab" data-bs-target="#pie" type="button" role="tab" aria-controls="pie" aria-selected="false">
                 <f:translate key="module.pie_chart"/>
             </a>
         </li>
     </ul>
 
     <div class="tab-content">
-        <div role="tabpanel" class="tab-pane active" id="bar">
+        <div class="tab-pane show active" id="bar" role="tabpanel" aria-labelledby="bar-tab">
             <f:for each="{data}" key="questionUid" as="questionItem" iteration="i">
                 <f:render section="questionDataRow" arguments="{i: i, questionUid: questionUid, questionItem: questionItem, type: 'bar'}"/>
             </f:for>
         </div>
-        <div role="tabpanel" class="tab-pane" id="pie">
+        <div class="tab-pane" id="pie" role="tabpanel" aria-labelledby="pie-tab">
             <f:for each="{data}" key="questionUid" as="questionItem" iteration="i">
                 <f:render section="questionDataRow" arguments="{i: i, questionUid: questionUid, questionItem: questionItem, type: 'pie'}"/>
             </f:for>

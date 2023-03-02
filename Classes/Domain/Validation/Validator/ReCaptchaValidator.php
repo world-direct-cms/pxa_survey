@@ -20,12 +20,6 @@ class ReCaptchaValidator extends AbstractValidator
 {
 
     /**
-     * @var \TYPO3\CMS\Extbase\Object\ObjectManager
-     * @TYPO3\CMS\Extbase\Annotation\Inject
-     */
-    protected $objectManager = null;
-
-    /**
      * Extension settings
      *
      * @var array
@@ -38,7 +32,7 @@ class ReCaptchaValidator extends AbstractValidator
     public function initializeObject()
     {
         /** @var ConfigurationManagerInterface $configurationManager */
-        $configurationManager = $this->objectManager->get(ConfigurationManagerInterface::class);
+        $configurationManager = GeneralUtility::makeInstance(ConfigurationManagerInterface::class);
 
         $this->settings = $configurationManager->getConfiguration(
             ConfigurationManagerInterface::CONFIGURATION_TYPE_SETTINGS

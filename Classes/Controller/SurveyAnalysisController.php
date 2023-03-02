@@ -14,13 +14,14 @@ namespace Pixelant\PxaSurvey\Controller;
  ***/
 
 use Pixelant\PxaSurvey\Domain\Model\Survey;
+use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 
 /**
@@ -30,25 +31,23 @@ use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 class SurveyAnalysisController extends AbstractController
 {
     /**
-     * BackendTemplateContainer
+     * ModuleTemplateFactory
      *
-     * @var BackendTemplateView
+     * @var ModuleTemplateFactory
      */
-    protected $view;
-
-    /**
-     * Backend Template Container
-     *
-     * @var BackendTemplateView
-     */
-    protected $defaultViewObjectName = BackendTemplateView::class;
-
+    protected ModuleTemplateFactory $moduleTemplateFactory;
     /**
      * Current page
      *
      * @var int
      */
     protected $pid = 0;
+
+    public function __construct(
+        ModuleTemplateFactory $moduleTemplateFactory
+    ) {
+        $this->moduleTemplateFactory = $moduleTemplateFactory;
+    }
 
     /**
      * Initialize
@@ -61,13 +60,20 @@ class SurveyAnalysisController extends AbstractController
     /**
      * Main action
      */
-    public function mainAction()
+    public function mainAction(): ResponseInterface
     {
+        $moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+
+        $this->createButtons($moduleTemplate);
+
         if ($this->pid) {
             $surveys = $this->surveyRepository->findByPid($this->pid);
         }
 
         $this->view->assign('surveys', $surveys ?? []);
+
+        $moduleTemplate->setContent($this->view->render());
+        return $this->htmlResponse($moduleTemplate->renderContent());
     }
 
     /**
@@ -75,12 +81,17 @@ class SurveyAnalysisController extends AbstractController
      *
      * @param Survey $survey
      */
-    public function seeAnalysisAction(Survey $survey)
+    public function seeAnalysisAction(Survey $survey): ResponseInterface
     {
+        $moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+
         $data = $this->generateAnalysisData($survey);
 
         $this->view->assign('dataJson', json_encode($data));
         $this->view->assign('data', $data);
+
+        $moduleTemplate->setContent($this->view->render());
+        return $this->htmlResponse($moduleTemplate->renderContent());
     }
 
     /**
@@ -88,7 +99,7 @@ class SurveyAnalysisController extends AbstractController
      *
      * @param Survey $survey
      */
-    public function exportCsvAction(Survey $survey)
+    public function exportCsvAction(Survey $survey): ResponseInterface
     {
         $data = $this->generateAnalysisData($survey);
 
@@ -133,11 +144,8 @@ class SurveyAnalysisController extends AbstractController
             'Expires' => '0'
         ];
         foreach ($headers as $header => $headerValue) {
-            /** @noinspection PhpUndefinedMethodInspection */
-            $this->response->setHeader($header, $headerValue);
+            header("$header: $headerValue");
         }
-        /** @noinspection PhpUndefinedMethodInspection */
-        $this->response->sendHeaders();
 
         $output = fopen('php://output', 'w');
         foreach ($lines as $singleLine) {
@@ -149,28 +157,14 @@ class SurveyAnalysisController extends AbstractController
     }
 
     /**
-     * Set up view
-     *
-     * @param ViewInterface $view
-     */
-    protected function initializeView(ViewInterface $view)
-    {
-        /** @var BackendTemplateView $view */
-        parent::initializeView($view);
-        if ($this->view->getModuleTemplate() !== null) {
-            $this->createButtons();
-        }
-    }
-
-    /**
      * Add menu buttons
      *
      * @return void
      */
-    protected function createButtons()
+    protected function createButtons(ModuleTemplate $moduleTemplate)
     {
         $iconFactory = GeneralUtility::makeInstance(IconFactory::class);
-        $buttonBar = $this->view->getModuleTemplate()->getDocHeaderComponent()->getButtonBar();
+        $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         $button = $buttonBar->makeLinkButton()
             ->setHref($this->buildNewSurveyUrl())
